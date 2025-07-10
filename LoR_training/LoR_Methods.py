@@ -537,4 +537,4 @@ class file_process:
     
     @staticmethod
     def get_trial_objects(rootFolder):
-        
+        LoR_stimulus_paths, LoR_HT_paths = file_process.extract_original_folder("/Users/haotianli/Code/EngertLab/Data/stimulus_meanLoR_v8")
