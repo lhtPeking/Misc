@@ -509,8 +509,8 @@ class LoR_Analysis:
         return stimulus_index[checkpoint]
     
 class file_process:
-    @staticmethod
-    def extract_original_folder(rootFolder):
+    @classmethod
+    def extract_original_folder(cls, rootFolder):
         fish_individuals = sorted(
             os.path.join(rootFolder, fishIndex)
             for fishIndex in os.listdir(rootFolder) 
@@ -535,6 +535,47 @@ class file_process:
         
         return stimulus_data, HT_data
     
-    @staticmethod
-    def get_trial_objects(rootFolder):
-        LoR_stimulus_paths, LoR_HT_paths = file_process.extract_original_folder("/Users/haotianli/Code/EngertLab/Data/stimulus_meanLoR_v8")
+    @classmethod
+    def get_trial_objects(cls, rootFolder):
+        LoR_stimulus_paths, LoR_HT_paths = cls.extract_original_folder(rootFolder)
+        
+        fish_number = 0
+        subtrial_number = 0
+        
+        list_index0 = []
+        list_index1 = []
+        list_index2 = []
+        
+        for stimulus_individual, HT_individual in zip(LoR_stimulus_paths, LoR_HT_paths):
+            
+            object_index0 = []
+            object_index1 = []
+            object_index2 = []
+            
+            for stimulus_subtrial, HT_subtrial  in zip(stimulus_individual, HT_individual):
+                stimulus_matrix = np.load(stimulus_subtrial)
+                HT_matrix = np.load(HT_subtrial)
+                
+                stimulus_index = LoR_Analysis.check_index(stimulus_matrix['stimulus_data'][:, 17], 1000) # This is actually "advised_stimulus_index"
+                
+                subtrial_object = Subtrial(stimulus_matrix, HT_matrix, fish_number, subtrial_number, stimulus_index)
+                    
+                if stimulus_index == 0:
+                    object_index0.append(subtrial_object)
+                elif stimulus_index == 1:
+                    object_index1.append(subtrial_object)
+                elif stimulus_index == 2:
+                    object_index2.append(subtrial_object)
+                else:
+                    raise ValueError("Invalid stimulus index.")
+                    
+                # subtrial_object.preference_analysis()
+                subtrial_number += 1
+            
+            fish_number += 1
+            subtrial_number = 0
+            list_index0.append(object_index0)
+            list_index1.append(object_index1)
+            list_index2.append(object_index2)
+            
+        return [list_index0, list_index1, list_index2]
