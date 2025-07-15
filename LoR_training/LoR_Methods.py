@@ -498,10 +498,13 @@ class Subtrial:
             fig.show()
             
             
-    def end_of_stage_analysis(self):
+    def piecewise_analysis(self):
         pass
-
+    
+    def successive_analysis(self):
+        pass
         
+    
 
 class LoR_Analysis:
     @staticmethod
@@ -556,7 +559,7 @@ class file_process:
                 stimulus_matrix = np.load(stimulus_subtrial)
                 HT_matrix = np.load(HT_subtrial)
                 
-                stimulus_index = LoR_Analysis.check_index(stimulus_matrix['stimulus_data'][:, 17], 1000) # This is actually "advised_stimulus_index"
+                stimulus_index = LoR_Analysis.check_index(stimulus_matrix['stimulus_data'][:, 16], 1000) # This is actually "advised_stimulus_index"
                 
                 subtrial_object = Subtrial(stimulus_matrix, HT_matrix, fish_number, subtrial_number, stimulus_index)
                     
