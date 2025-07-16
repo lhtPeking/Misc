@@ -45,7 +45,7 @@ sine_grating_motion_shader = [
             // Shock Area
             if (0 < time_since_shocking < 0.25) {
                 color = vec3(1.0);
-            } else {
+            } elif (time_since_shocking >= 0.25) {
                 color = mix(vec3(0.0), color, circle(st,vec2(0.0),0.01));
             }
             
@@ -144,19 +144,6 @@ class MyApp(Panda3D_Scene):
 
         trial_num = self.shared.experiment_flow_control_current_trial.value
         self.condition[fish_index] = np.floor(trial_num/2) % 2 # 0 is LoR; 1 is RoL
-
-        if (self.isLooming[fish_index] == 0) & (self.isShocking[fish_index] == 0): # Normal
-            self.time_since_normal[fish_index] += dt
-            self.time_since_looming[fish_index] = 0
-            self.time_since_shocking[fish_index] = 0
-        elif (self.isLooming[fish_index] == 1) & (self.isShocking[fish_index] == 0): # Looming
-            self.time_since_normal[fish_index] = 0
-            self.time_since_looming[fish_index] += dt
-            self.time_since_shocking[fish_index] = 0
-        elif self.isShocking[fish_index] == 1: # Shocking
-            self.time_since_normal[fish_index] = 0
-            self.time_since_looming[fish_index] = 0
-            self.time_since_shocking[fish_index] += dt
             
 
         fish_ac = np.sqrt(self.shared.tail_tracking_circular_history_tail_tip_deflection_sliding_window_variance[fish_index][self.shared.tail_tracking_circular_counter[fish_index].value])
@@ -201,33 +188,52 @@ class MyApp(Panda3D_Scene):
 
         max_time_looming = 10
         max_time_normal = 30
-        
         max_time_shocking = 2
+        
+        ### Time Counter ###
+        if (self.isLooming[fish_index] == 0) & (self.isShocking[fish_index] == 0): # Normal
+            self.time_since_normal[fish_index] += dt
+            self.time_since_looming[fish_index] = 0
+            self.time_since_shocking[fish_index] = 0
+        elif self.isLooming[fish_index] == 1: # Looming
+            self.time_since_normal[fish_index] = 0
+            self.time_since_looming[fish_index] += dt
+            self.time_since_shocking[fish_index] = 0
+        elif self.isShocking[fish_index] == 1: # Shocking
+            self.time_since_normal[fish_index] = 0
+            self.time_since_looming[fish_index] = 0
+            self.time_since_shocking[fish_index] += dt
+        else raise ValueError("Invalid state. It should be \"Normal\" or \"Looming\" or \"Shocking\".")
+        ### --- ###
 
+        ### State Switch ###
         if self.isLooming[fish_index] == 1: ## currently looming
             if ((self.decided[fish_index] == 1) & (self.decided_prev[fish_index] == 0.5)): # bout occurs
                 if self.typeofbout[fish_index] == 1: # correct
-                    self.time_since_normal[fish_index] = 0
                     self.isLooming[fish_index] = 0
                     self.numcorrectbouts[fish_index] += 1
                 elif self.typeofbout[fish_index] == -1: # incorrect
                     self.isLooming[fish_index] = 0
                     self.isShocking[fish_index] = 1
                     self.numincorrectbouts[fish_index] += 1
-                else: self.numindetbouts[fish_index] += 1 # indifferent
-
+                elif self.typeofbout[fish_index] == -0.5: # indifferent
+                    self.numindetbouts[fish_index] += 1
             elif self.time_since_looming[fish_index] > max_time_looming: # does't bout til looming ends
-                self.time_since_normal[fish_index] = 0
                 self.isLooming[fish_index] = 0
+                self.isShocking[fish_index] = 1
                 self.numfailed[fish_index] += 1
+                
         elif (self.isLooming[fish_index] == 0) & (self.isShocking[fish_index] == 0): ## currently normal
             if (self.time_since_normal[fish_index] > max_time_normal):
                 self.isLooming[fish_index] = 1
-                # self.time_since_looming[fish_index] = 0
-        elif self.isShocking[fish_index] == 1:
+                
+        elif self.isShocking[fish_index] == 1: ## currently shocking
             if self.time_since_shocking[fish_index] > max_time_shocking:
                 self.isShocking[fish_index] = 0
+                
         else raise ValueError("Invalid state. It should be \"Normal\" or \"Looming\" or \"Shocking\".")
+        ### --- ###
+        
 
         fish_speed = fish_ac
         self.prev_ac[fish_index] = fish_speed
@@ -243,6 +249,6 @@ class MyApp(Panda3D_Scene):
         return [trial_num, stimulus_index, fish_speed, dt, stimulus_time, curr_angle, self.baseline_angle[fish_index], 
                 self.frame_count_after_start[fish_index], self.int_angle[fish_index], self.typeofbout[fish_index], 
                 self.numcorrectbouts[fish_index], self.numincorrectbouts[fish_index], self.numindetbouts[fish_index], 
-                self.numfailed[fish_index], self.isLooming[fish_index], self.time_since_looming[fish_index], 
-                self.time_since_normal[fish_index], self.isShocking[fish_index], self.time_since_shocking[fish_index]
+                self.numfailed[fish_index], self.isLooming[fish_index], self.isShocking[fish_index],
+                self.time_since_normal[fish_index], self.time_since_looming[fish_index], self.time_since_shocking[fish_index]
                 ]
