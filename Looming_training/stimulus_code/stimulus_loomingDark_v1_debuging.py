@@ -43,7 +43,7 @@ sine_grating_motion_shader = [
             // Make black outside certain radius
             color = mix(color, vec3(0.0), circle(st,vec2(0.0),1.0));
             // Loom Area
-            color = mix(vec3(0.0), color, circle(st,vec2(0.0),time_since_looming*0.003));
+            color = mix(vec3(0.0), color, circle(st,vec2(0.0),time_since_looming*0.004));
             // Shock Area
             if (0 < time_since_shocking) {
                 color = mix(vec3(0.0), color, circle(st,vec2(0.0),1.0));
@@ -157,7 +157,6 @@ class MyApp(Panda3D_Scene):
         if fish_ac < 0.5:
             fish_ac = 0
 
-        
         decisiontime = 0.18
         decisionthreshold = 1
         
