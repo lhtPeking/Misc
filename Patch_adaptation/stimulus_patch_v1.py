@@ -3,6 +3,8 @@ import numpy as np
 from panda3d_scene import Panda3D_Scene
 from scipy.ndimage import gaussian_filter
 
+### For this experiment, trial number should be set to 6.
+
 sine_grating_motion_shader = [
     """ #version 140
         uniform mat4 p3d_ModelViewProjectionMatrix;
@@ -24,20 +26,34 @@ sine_grating_motion_shader = [
         uniform float y;
         uniform float pattern_orientation;
         uniform float offset;
+        uniform float display_mode;
+        uniform float coherence;
 
         in vec2 texcoord;
 
         out vec4 gl_FragColor;
+        
+        float rand(vec2 co) {
+            return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
+        }
 
-        void main(void){
+        void main(void) {
             float x_ = (2*texcoord.x-x-1)*cos(-pattern_orientation*3.1415/180) - (2*texcoord.y-y-1)*sin(-pattern_orientation*3.1415/180);
             float y_ = (2*texcoord.x-x-1)*sin(-pattern_orientation*3.1415/180) + (2*texcoord.y-y-1)*cos(-pattern_orientation*3.1415/180);
 
             float r = sqrt(pow(2*texcoord.x-1, 2) + pow(2*texcoord.y-1, 2));
             float c;
-
+            
             if (r > 1) c = 0;
             else c = 0.5*(sin((x_ - offset)*2*3.1415/wavelength)*contrast+1.0);
+            
+            int gridSize = 20;
+            vec2 gridPos = floor(texcoord * float(gridSize));
+            float rnd = rand(gridPos);
+            bool isGrayBlock = rnd > coherence;
+            if (display_mode == 1) && (isGrayBlock) {
+                c = 0.5;
+            }
             
             gl_FragColor = vec4(c, c, c, 1.0);
         }
@@ -74,6 +90,7 @@ class MyApp(Panda3D_Scene):
             
             ### display mode: 0 for normal, 1 for low-coherence (patched). Change this parameter only during "Condition" stage.
             self.cardnodes[fish_index].setShaderInput("display_mode", 0)
+            self.cardnodes[fish_index].setShaderInput("coherence", 1.0)
 
         self.pattern_offset = [0 for _ in range(4)]
         self.prev_gain = [0.1 for _ in range(4)]
@@ -107,28 +124,24 @@ class MyApp(Panda3D_Scene):
             fish_ac = 0
 
         self.display_mode[fish_index] = 0 # reset
-        if 0 <= stimulus_time < 10:  # 0-10 rest; 10-50 normal CL; 50-150 condition;
+        # 0-10 rest; 10-50 normal CL; 50-150 condition;
+        if 0 <= stimulus_time < 10: # 'rest'
             gain = 0.1
             forward_speed = 0
-            stimname = 0 # 'rest'
-        elif 10 <= stimulus_time < 50: 
+            stimname = 0 
+        elif 10 <= stimulus_time < 50: # 'CL'
             gain = 0.1
             forward_speed = 0.1
-            stimname = 1 # 'CL'
-        elif 50 <= stimulus_time < 150:
-            gain = 0.1
-            forward_speed = 0.1
-            stimname = 3 # 'Condition'
-            
+            stimname = 1 
+        elif 50 <= stimulus_time < 150: # 'Condition'
             self.display_mode[fish_index] = 1
-            
-            
-            
-            
-        else:
+            gain = 0.1
+            forward_speed = 0.1
+            stimname = 3 
+        else: #'restother'
             gain = 0.1
             forward_speed = 0
-            stimname = 4#'restother'
+            stimname = 4
 
         fish_speed = fish_ac
         self.prev_ac[fish_index] = fish_speed
@@ -140,8 +153,9 @@ class MyApp(Panda3D_Scene):
 
         self.cardnodes[fish_index].setShaderInput("offset", self.pattern_offset[fish_index])
         self.cardnodes[fish_index].setShaderInput("display_mode", self.display_mode[fish_index])
+        self.cardnodes[fish_index].setShaderInput("coherence", self.coherence[fish_index][trial_num])
 
 
         return [trial_num, gain, forward_speed, fish_speed, self.pattern_offset[fish_index],
                 updateamount, dt, stimulus_time, stimname, curr_angle, curr_angle_mean,
-                self.baseline_angle[fish_index]]
+                self.baseline_angle[fish_index], self.display_mode[fish_index], self.coherence[fish_index]]
