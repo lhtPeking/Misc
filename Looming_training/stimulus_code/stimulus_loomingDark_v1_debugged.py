@@ -157,7 +157,7 @@ class MyApp(Panda3D_Scene):
         if fish_ac < 0.5:
             fish_ac = 0
 
-        decisiontime = 0.18
+        decisiontime = 0.10
         decisionthreshold = 1
         
         ## bout
@@ -169,14 +169,16 @@ class MyApp(Panda3D_Scene):
                 self.time_after_start[fish_index] = dt # reset
                 self.int_angle[fish_index] = (curr_angle - self.baseline_angle[fish_index])*dt # reset
                 self.decided[fish_index] = 0
-
+                
+                
             ## within bout
             else:
                 self.frame_count_after_start[fish_index] += 1
                 self.time_after_start[fish_index] += dt
                 self.int_angle[fish_index] += (curr_angle - self.baseline_angle[fish_index])*dt
-
-                if (self.decided[fish_index] == 0):
+                     
+                ## at decision time
+                if ((self.decided[fish_index] == 0) & (self.time_after_start[fish_index] > decisiontime)):
                     self.decided[fish_index] = 1
 
                     if (self.int_angle[fish_index] / self.time_after_start[fish_index] > decisionthreshold):
