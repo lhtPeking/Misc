@@ -95,7 +95,7 @@ class MyApp(Panda3D_Scene):
         self.pattern_updateamount_CL_history = [[] for _ in range(4)]
         self.pattern_updateamount_counter = [0 for _ in range(4)]
         
-        self.dynamic_contrast = [[np.random.permutation([0.0 0.1 0.2 0.3 0.4 0.5])] for _ in range(6)]
+        self.dynamic_contrast = [[np.random.permutation([0.0, 0.1, 0.2, 0.3, 0.4, 0.5])] for _ in range(4)]
         self.display_mode = [0 for _ in range(4)]
 
     def init_stimulus(self, fish_index, stimulus_index):
