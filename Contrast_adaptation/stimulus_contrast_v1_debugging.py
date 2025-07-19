@@ -3,7 +3,7 @@ import numpy as np
 from panda3d_scene import Panda3D_Scene
 from scipy.ndimage import gaussian_filter
 
-### For this experiment, trial number should be set to 6.
+### For this experiment, trial number should be set to 18.
 
 sine_grating_motion_shader = [
     """ #version 140
@@ -44,13 +44,12 @@ sine_grating_motion_shader = [
 
             float r = sqrt(pow(2*texcoord.x-1, 2) + pow(2*texcoord.y-1, 2));
             float c;
+            c = 0.5*(sin((x_ - offset)*2*3.1415/wavelength)*contrast+1.0);
             
             if (r > 1) c = 0;
             else if ((r <= 1) && (display_mode == 1) && (inbout == 1)) { 
                 if (c >= 1) c = 1 - dynamic_contrast;
                 else if (c <= 0) c = dynamic_contrast;
-            } else {
-                c = 0.5*(sin((x_ - offset)*2*3.1415/wavelength)*contrast+1.0);
             }
             
             gl_FragColor = vec4(c, c, c, 1.0);
@@ -97,7 +96,7 @@ class MyApp(Panda3D_Scene):
         self.pattern_updateamount_CL_history = [[] for _ in range(4)]
         self.pattern_updateamount_counter = [0 for _ in range(4)]
         
-        self.dynamic_contrast = [np.random.permutation([0.0, 0.1, 0.2, 0.3, 0.4, 0.5]) for _ in range(4)]
+        self.dynamic_contrast = [np.random.permutation([0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5]) for _ in range(4)]
         self.display_mode = [0 for _ in range(4)]
         self.inbout = [0 for _ in range(4)]
 
