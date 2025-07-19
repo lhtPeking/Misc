@@ -45,10 +45,10 @@ sine_grating_motion_shader = [
             float c;
             
             if (r > 1) c = 0;
-            else if (r <= 1) && (display_mode == 0) c = 0.5*(sin((x_ - offset)*2*3.1415/wavelength)*contrast+1.0);
-            else if (r <= 1) && (display_mode == 1) { 
+            else if ((r <= 1) && (display_mode == 0)) c = 0.5*(sin((x_ - offset)*2*3.1415/wavelength)*contrast+1.0);
+            else if ((r <= 1) && (display_mode == 1)) { 
                 if (c >= 1) c = 1 - dynamic_contrast;
-                else if (c <= 0) c = dynamic_contrast
+                else if (c <= 0) c = dynamic_contrast;
             }
             
             gl_FragColor = vec4(c, c, c, 1.0);
