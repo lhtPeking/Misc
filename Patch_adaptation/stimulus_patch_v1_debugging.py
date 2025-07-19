@@ -28,6 +28,7 @@ sine_grating_motion_shader = [
         uniform float offset;
         uniform float display_mode;
         uniform float coherence;
+        uniform float inbout;
 
         in vec2 texcoord;
 
@@ -51,7 +52,7 @@ sine_grating_motion_shader = [
             vec2 gridPos = floor(texcoord * float(gridSize));
             float rnd = rand(gridPos);
             bool isGrayBlock = rnd > coherence;
-            if (display_mode == 1) && (isGrayBlock) {
+            if ((display_mode == 1) && (isGrayBlock) && (inbout == 1)) {
                 c = 0.5;
             }
             
@@ -91,6 +92,7 @@ class MyApp(Panda3D_Scene):
             ### display mode: 0 for normal, 1 for low-coherence (patched). Change this parameter only during "Condition" stage.
             self.cardnodes[fish_index].setShaderInput("display_mode", 0)
             self.cardnodes[fish_index].setShaderInput("coherence", 1.0)
+            self.cardnodes[fish_index].setShaderInput("inbout", 0)
 
         self.pattern_offset = [0 for _ in range(4)]
         self.prev_gain = [0.1 for _ in range(4)]
@@ -99,8 +101,9 @@ class MyApp(Panda3D_Scene):
         self.pattern_updateamount_CL_history = [[] for _ in range(4)]
         self.pattern_updateamount_counter = [0 for _ in range(4)]
         
-        self.coherence = [[np.random.permutation([0.0 0.2 0.4 0.6 0.8 1.0])] for _ in range(4)]
+        self.coherence = [np.random.permutation([0.0 0.2 0.4 0.6 0.8 1.0]) for _ in range(4)]
         self.display_mode = [0 for _ in range(4)]
+        self.inbout = [0 for _ in range(4)]
 
     def init_stimulus(self, fish_index, stimulus_index):
         pass
@@ -118,10 +121,14 @@ class MyApp(Panda3D_Scene):
         curr_angle = self.shared.tail_tracking_circular_history_tail_tip_deflection[fish_index][self.shared.tail_tracking_circular_counter[fish_index].value]
         curr_angle_mean = self.shared.tail_tracking_circular_history_tail_tip_deflection_sliding_window_mean[fish_index][self.shared.tail_tracking_circular_counter[fish_index].value]
         
+        self.inbout[fish_index] = 0
         if (fish_ac < 0.2) & (self.prev_ac[fish_index] == 0):
             self.baseline_angle[fish_index] = np.mean([curr_angle_mean,self.baseline_angle[fish_index]])
+
         if fish_ac < 0.5:
             fish_ac = 0
+        else:
+            self.inbout[fish_index] = 1
 
         self.display_mode[fish_index] = 0 # reset
         # 0-10 rest; 10-50 normal CL; 50-150 condition;
@@ -154,8 +161,10 @@ class MyApp(Panda3D_Scene):
         self.cardnodes[fish_index].setShaderInput("offset", self.pattern_offset[fish_index])
         self.cardnodes[fish_index].setShaderInput("display_mode", self.display_mode[fish_index])
         self.cardnodes[fish_index].setShaderInput("coherence", self.coherence[fish_index][trial_num])
+        self.cardnodes[fish_index].setShaderInput("inbout", self.inbout[fish_index])
 
 
         return [trial_num, gain, forward_speed, fish_speed, self.pattern_offset[fish_index],
                 updateamount, dt, stimulus_time, stimname, curr_angle, curr_angle_mean,
-                self.baseline_angle[fish_index], self.display_mode[fish_index], self.coherence[fish_index]]
+                self.baseline_angle[fish_index], self.display_mode[fish_index], self.coherence[fish_index],
+                self.inbout[fish_index]]
