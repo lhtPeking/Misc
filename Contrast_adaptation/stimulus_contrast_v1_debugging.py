@@ -77,7 +77,7 @@ class MyApp(Panda3D_Scene):
         for fish_index in range(4):
             self.cardnodes[fish_index].setShader(self.compiled_sine_grating_motion_shader)
 
-            self.cardnodes[fish_index].setShaderInput("dynamic_contrast", 5)
+            self.cardnodes[fish_index].setShaderInput("contrast", 5)
             self.cardnodes[fish_index].setShaderInput("wavelength", 0.3)
             self.cardnodes[fish_index].setShaderInput("x", 0.0)
             self.cardnodes[fish_index].setShaderInput("y", 0.0)
