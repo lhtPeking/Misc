@@ -3,7 +3,7 @@ import numpy as np
 from panda3d_scene import Panda3D_Scene
 from scipy.ndimage import gaussian_filter
 
-### For this experiment, trial number should be set to 6.
+### For this experiment, trial number should be set to 18.
 
 sine_grating_motion_shader = [
     """ #version 140
@@ -52,7 +52,7 @@ sine_grating_motion_shader = [
             vec2 gridPos = floor(texcoord * float(gridSize));
             float rnd = rand(gridPos);
             bool isGrayBlock = rnd > coherence;
-            if ((display_mode == 1) && (isGrayBlock) && (inbout == 1)) {
+            if ((r <= 1) && (display_mode == 1) && (isGrayBlock) && (inbout == 1)) {
                 c = 0.5;
             }
             
@@ -101,7 +101,7 @@ class MyApp(Panda3D_Scene):
         self.pattern_updateamount_CL_history = [[] for _ in range(4)]
         self.pattern_updateamount_counter = [0 for _ in range(4)]
         
-        self.coherence = [np.random.permutation([0.0 0.2 0.4 0.6 0.8 1.0]) for _ in range(4)]
+        self.coherence = [np.random.permutation([0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 0.0, 0.2, 0.4, 0.6, 0.8, 1.0]) for _ in range(4)]
         self.display_mode = [0 for _ in range(4)]
         self.inbout = [0 for _ in range(4)]
 
@@ -166,5 +166,5 @@ class MyApp(Panda3D_Scene):
 
         return [trial_num, gain, forward_speed, fish_speed, self.pattern_offset[fish_index],
                 updateamount, dt, stimulus_time, stimname, curr_angle, curr_angle_mean,
-                self.baseline_angle[fish_index], self.display_mode[fish_index], self.coherence[fish_index],
+                self.baseline_angle[fish_index], self.display_mode[fish_index], self.coherence[fish_index][trial_num],
                 self.inbout[fish_index]]
