@@ -88,6 +88,7 @@ class MyApp(Panda3D_Scene):
             ### display mode: 0 for normal, 1 for low-contrast. Change this parameter only during "Condition" stage.
             self.cardnodes[fish_index].setShaderInput("display_mode", 0)
             self.cardnodes[fish_index].setShaderInput("dynamic_contrast", 1.0)
+            self.cardnodes[fish_index].setShaderInput("inbout", 0)
 
         self.pattern_offset = [0 for _ in range(4)]
         self.prev_gain = [0.1 for _ in range(4)]
@@ -162,4 +163,5 @@ class MyApp(Panda3D_Scene):
 
         return [trial_num, gain, forward_speed, fish_speed, self.pattern_offset[fish_index],
                 updateamount, dt, stimulus_time, stimname, curr_angle, curr_angle_mean,
-                self.baseline_angle[fish_index], self.display_mode[fish_index], self.dynamic_contrast[fish_index][trial_num]]
+                self.baseline_angle[fish_index], self.display_mode[fish_index], self.dynamic_contrast[fish_index][trial_num],
+                self.inbout[fish_index]]

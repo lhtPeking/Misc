@@ -43,7 +43,7 @@ sine_grating_motion_shader = [
             // Make black outside certain radius
             color = mix(color, vec3(0.0), circle(st,vec2(0.0),1.0));
             // Loom Area
-            color = mix(vec3(0.0), color, circle(st,vec2(0.0),time_since_looming*0.004));
+            color = mix(vec3(0.0), color, circle(st,vec2(0.0),time_since_looming*0.02));
             // Shock Area
             if (0 < time_since_shocking) {
                 color = mix(vec3(0.0), color, circle(st,vec2(0.0),1.0));
