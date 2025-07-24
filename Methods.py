@@ -6,6 +6,12 @@ import sys
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 from scipy.stats import gaussian_kde
+from scipy.ndimage import gaussian_filter1d
+import pywt
+import pycwt as wavelet
+from scipy.signal import detrend
+
+
 
 class stimuli:
     def __init__(self, stimulus_data_paths, HT_data_paths):
@@ -77,25 +83,73 @@ class stimuli:
                         if(curr_max_during_bout >= threshold):
                             struggle_vector[bout_start_indices[bout]] += 1
                             
+            # 栅格化原始时间轴
             num_bins = 150
             bins = np.linspace(self.time_axes.min(), self.time_axes.max(), num_bins + 1)
             counts, bin_edges = np.histogram(self.time_axes, bins=bins, weights=struggle_vector)
             bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
+            bin_width = bins[1] - bins[0]
 
-            struggle_times = self.time_axes[np.where(struggle_vector == 1)]
-            kde = gaussian_kde(struggle_times, bw_method=0.1)
-            x_vals = np.linspace(self.time_axes.min(), self.time_axes.max(), 500)
-            density = kde(x_vals)
+            # ==== 泊松 λ(t) 估计 ====
+            def sliding_poisson_lambda(counts, centers, window_size_bins=5, stride_bins=1):
+                lambdas = []
+                lambda_times = []
+                for i in range(0, len(counts) - window_size_bins + 1, stride_bins):
+                    window = counts[i:i+window_size_bins]
+                    lam = np.mean(window) / bin_width  # 恢复为“单位时间 λ”
+                    center_time = np.mean(centers[i:i+window_size_bins])
+                    lambdas.append(lam)
+                    lambda_times.append(center_time)
+                return np.array(lambda_times), np.array(lambdas)
 
+            # 滑动窗口 λ(t) 曲线
+            lambda_times, lambda_vals = sliding_poisson_lambda(counts, bin_centers, window_size_bins=10, stride_bins=1)
+            lambda_vals_smooth = gaussian_filter1d(lambda_vals, sigma=2)
+
+            # ==== 绘图 ====
+            plt.style.use('dark_background')
             plt.figure(figsize=(10, 3))
-            plt.bar(bin_centers, counts, width=np.diff(bin_edges), align='center', edgecolor='k', alpha=0.4, label='Struggle Count')
-            plt.plot(x_vals, density * len(struggle_times) * (bins[1] - bins[0]), color='red', linewidth=2, label='KDE Fit')
+
+            # 原始计数柱状图
+            plt.bar(bin_centers, counts, width=np.diff(bin_edges), align='center', edgecolor='white', color='lightgray',
+                    alpha=0.4, label='Struggle Count')
+
+            # λ(t) 曲线（泊松滑动估计）
+            plt.plot(lambda_times, lambda_vals * bin_width, color='#D76C82', linewidth=2, label='Poisson λ(t)')
+            
+            # Smoothed λ(t) 曲线（泊松滑动估计）
+            plt.plot(lambda_times, lambda_vals_smooth * bin_width, color='#99BC85', linewidth=2, label='Smoothed Poisson λ(t)')
 
             plt.xlabel('Time (s)')
-            plt.ylabel('Struggle Count')
-            plt.title('Struggle Frequency with KDE Fit')
+            plt.ylabel('Struggle Count / Estimated Rate')
+            plt.title('Struggle Frequency with Poisson λ(t) Estimation')
             plt.legend()
             plt.grid(True, axis='y', linestyle='--', alpha=0.5)
+            plt.tight_layout()
+            plt.style.use('dark_background')
+            plt.show()
+            
+            # ==== 输入信号 ====
+            signal = lambda_vals_smooth
+            t = lambda_times
+            dt = np.mean(np.diff(t))  # 时间步长（假设等间距）
+
+            # ==== 选择小波类型和尺度 ====
+            wavelet = 'cmor2.0-0.5'  # cmor[bandwidth parameter]-[center frequency]
+            scales = np.arange(1, 128)
+
+            # ==== 连续小波变换 ====
+            coeffs, freqs = pywt.cwt(signal, scales, wavelet, sampling_period=dt)
+            power = np.abs(coeffs) ** 2
+
+            # ==== 可视化 ====
+            plt.figure(figsize=(10, 4))
+            plt.imshow(power, extent=[t[0], t[-1], freqs[-1], freqs[0]],
+                    cmap='jet', aspect='auto', vmin = np.percentile(power, 10), vmax = np.percentile(power, 99.5))
+            plt.colorbar(label='Log Power')
+            plt.xlabel('Time (s)')
+            plt.ylabel('Frequency (Hz)')
+            plt.title('Wavelet Power Spectrum')
             plt.tight_layout()
             plt.show()
 
@@ -105,7 +159,7 @@ class stimuli:
         else:
             raise ValueError("Invalide Mode. Mode could either be \"stimuli\" or \"fish\".")
         
-        return struggle_vector
+        return struggle_vector, self.time_axes
         
         
         
