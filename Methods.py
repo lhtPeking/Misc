@@ -51,7 +51,7 @@ class stimuli:
         
         fig.show()
         
-    def struggle_detection(self, threshold=50, mode="stimuli", fish_index=None):
+    def struggle_detection(self, threshold=50, mode="stimuli"):
         if mode == "stimuli":
             struggle_vector = np.zeros(self.stimulus_frame_count)
             for fish_index in range(self.fish_number):
@@ -155,11 +155,112 @@ class stimuli:
 
 
         elif mode == "fish":
-            pass
+            struggle_vector = np.zeros((self.fish_number, self.stimulus_frame_count))
+
+            # ==== 计算每条鱼的 struggle vector ====
+            for fish_index in range(self.fish_number):
+                for trial_index in range(self.trial_number_per_fish):
+                    stimulus_matrix = np.load(self.stimulus_data_paths[fish_index][trial_index])
+                    time_axes = stimulus_matrix['stimulus_time'] - stimulus_matrix['stimulus_time'][0]
+                    curr_angle = stimulus_matrix['stimulus_data'][:, 9]
+                    inbout_series = stimulus_matrix['stimulus_data'][:, 14]
+                    diff = np.diff(inbout_series)
+                    bout_start_indices = np.where(diff == 1)[0] + 1
+                    bout_end_indices = np.where(diff == -1)[0] + 1
+
+                    for bout in range(len(bout_end_indices)):
+                        adjust_amount = 0
+                        if inbout_series[0] == 1:
+                            adjust_amount = 1
+                        if bout >= len(bout_start_indices):
+                            break
+                        if bout + adjust_amount >= len(bout_end_indices):
+                            break
+
+                        curr_max_during_bout = max(np.abs(curr_angle[bout_start_indices[bout]:bout_end_indices[bout + adjust_amount]]))
+                        if curr_max_during_bout >= threshold:
+                            struggle_vector[fish_index, bout_start_indices[bout]] += 1
+
+            # 栅格化时间轴
+            num_bins = 150
+            bins = np.linspace(self.time_axes.min(), self.time_axes.max(), num_bins + 1)
+            bin_centers = (bins[:-1] + bins[1:]) / 2
+            bin_width = bins[1] - bins[0]
+            
+            # ==== 泊松 λ(t) 估计 ====
+            def sliding_poisson_lambda(counts, centers, window_size_bins=5, stride_bins=1):
+                lambdas = []
+                lambda_times = []
+                for i in range(0, len(counts) - window_size_bins + 1, stride_bins):
+                    window = counts[i:i+window_size_bins]
+                    lam = np.mean(window) / bin_width  # 恢复为“单位时间 λ”
+                    center_time = np.mean(centers[i:i+window_size_bins])
+                    lambdas.append(lam)
+                    lambda_times.append(center_time)
+                return np.array(lambda_times), np.array(lambdas)
+
+            # 准备画图
+            plt.style.use('dark_background')
+            plt.figure(figsize=(10, 4))
+
+            lambda_list = []
+            t_list = []
+
+            # ==== 对每条鱼单独处理 ====
+            for fish_index in range(self.fish_number):
+                counts, bin_edges = np.histogram(self.time_axes, bins=bins, weights=struggle_vector[fish_index])
+
+                # 滑动估计泊松 λ(t)
+                lambda_times, lambda_vals = sliding_poisson_lambda(counts, bin_centers, window_size_bins=10, stride_bins=1)
+                lambda_vals_smooth = gaussian_filter1d(lambda_vals, sigma=2)
+
+                # 绘制 λ(t) 曲线
+                plt.plot(lambda_times, lambda_vals_smooth * bin_width, linewidth=2, alpha=0.7, label=f'Fish {fish_index + 1}')
+
+                lambda_list.append(lambda_vals_smooth)
+                t_list.append(lambda_times)
+
+            plt.xlabel('Time (s)')
+            plt.ylabel('Smoothed λ(t)')
+            plt.title('Per-Fish Smoothed Poisson λ(t)')
+            plt.legend()
+            plt.grid(True, axis='y', linestyle='--', alpha=0.5)
+            plt.tight_layout()
+            plt.show()
+
+            # ==== 小波分析：每条鱼单独做 Wavelet → 最后求平均 ====
+            wavelet = 'cmor2.0-0.5'
+            scales = np.arange(1, 128)
+
+            all_power = []
+
+            for i in range(self.fish_number):
+                signal = lambda_list[i]
+                t = t_list[i]
+                dt = np.mean(np.diff(t))
+                coeffs, freqs = pywt.cwt(signal, scales, wavelet, sampling_period=dt)
+                power = np.abs(coeffs) ** 2
+                all_power.append(power)
+
+            # 对所有鱼的 power 平均
+            avg_power = np.mean(all_power, axis=0)
+
+            # ==== 可视化平均 Wavelet Power ====
+            plt.figure(figsize=(10, 4))
+            plt.imshow(avg_power, extent=[t[0], t[-1], freqs[-1], freqs[0]],
+                    cmap='jet', aspect='auto',
+                    vmin=np.percentile(avg_power, 10), vmax=np.percentile(avg_power, 99.5))
+            plt.colorbar(label='Avg Log Power')
+            plt.xlabel('Time (s)')
+            plt.ylabel('Frequency (Hz)')
+            plt.title('Average Wavelet Power Spectrum (All Fish)')
+            plt.tight_layout()
+            plt.show()
+            
         else:
             raise ValueError("Invalide Mode. Mode could either be \"stimuli\" or \"fish\".")
         
-        return struggle_vector, self.time_axes
+        return struggle_vector, self.time_axes, avg_power
         
         
         
