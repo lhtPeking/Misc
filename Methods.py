@@ -262,14 +262,7 @@ class stimuli:
         
         return struggle_vector, self.time_axes, avg_power
         
-        
-        
-        
-        
-        
-        
-        
-        
+
     def scalable_visualization_coherence(self, fish_index, trial_index):
         stimulus_matrix = np.load(self.stimulus_data_paths[fish_index][trial_index])
         HT_matrix = np.load(self.HT_data_paths[fish_index][trial_index])
