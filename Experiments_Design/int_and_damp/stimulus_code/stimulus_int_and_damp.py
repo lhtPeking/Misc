@@ -48,7 +48,7 @@ class MyApp(Panda3D_Scene):
     def __init__(self, shared):
 
         self.stimulus_number_of_stimuli = 1
-        self.stimulus_time_per_stimulus = 470
+        self.stimulus_time_per_stimulus = 320
         self.prev_ac = 0
         Panda3D_Scene.__init__(self, shared)
 
@@ -105,22 +105,18 @@ class MyApp(Panda3D_Scene):
             gain = 0.1
             forward_speed = 0
             stimname = 0 # 'rest'
-        elif 10 <= stimulus_time < 160: 
+        elif 10 <= stimulus_time < 210: 
             gain = 0.1
             forward_speed = 0.1
             stimname = 1 # 'CL'
-        elif 160 <= stimulus_time < 310:
-            gain = 0.05
-            forward_speed = 0.1
-            stimname = 2 # 'low gain'
-        elif 310 <= stimulus_time < 460:
+        elif 210 <= stimulus_time < 310:
             gain = 0
             forward_speed = 0.1
-            stimname = 3 # 'OL'
-        elif 460 <= stimulus_time < 470:
+            stimname = 2 # 'OL'
+        elif 310 <= stimulus_time < 320:
             gain = 0.1
             forward_speed = 0
-            stimname = 4 # 'rest'
+            stimname = 3 # 'rest'
         else:
             gain = 0.1
             forward_speed = 0
