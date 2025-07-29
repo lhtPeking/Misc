@@ -51,6 +51,13 @@ class stimuli:
         
         fig.show()
         
+    def calculate_inbout_series(self, stimulus_matrix):
+        fish_speed = stimulus_matrix['stimulus_data'][:, 3]
+        # When fish_speed != 0, it indicates "in bout"
+        
+        inbout_series = (fish_speed != 0).astype(int)
+        return inbout_series
+        
     def struggle_detection(self, threshold=50, mode="stimuli"):
         if mode == "stimuli":
             struggle_vector = np.zeros(self.stimulus_frame_count)
@@ -61,7 +68,7 @@ class stimuli:
                     time_axes = stimulus_matrix['stimulus_time'] - stimulus_matrix['stimulus_time'][0]
                     curr_angle = stimulus_matrix['stimulus_data'][:, 9]
                     
-                    inbout_series = stimulus_matrix['stimulus_data'][:, 14]
+                    inbout_series = self.calculate_inbout_series(stimulus_matrix)
                     diff = np.diff(inbout_series)
                     bout_start_indices = np.where(diff == 1)[0] + 1
                     bout_end_indices = np.where(diff == -1)[0] + 1
@@ -76,7 +83,7 @@ class stimuli:
                         if inbout_series[0] == 1:
                             adjust_amount = 1
                             
-                        if bout >= len(bout_start_indices):
+                        if (bout+adjust_amount >= len(bout_end_indices)):
                             break
                         
                         curr_max_during_bout = max(np.abs(curr_angle[bout_start_indices[bout]:bout_end_indices[bout+adjust_amount]]))
@@ -152,6 +159,8 @@ class stimuli:
             plt.title('Wavelet Power Spectrum')
             plt.tight_layout()
             plt.show()
+            
+            avg_power = None
 
 
         elif mode == "fish":
@@ -163,7 +172,7 @@ class stimuli:
                     stimulus_matrix = np.load(self.stimulus_data_paths[fish_index][trial_index])
                     time_axes = stimulus_matrix['stimulus_time'] - stimulus_matrix['stimulus_time'][0]
                     curr_angle = stimulus_matrix['stimulus_data'][:, 9]
-                    inbout_series = stimulus_matrix['stimulus_data'][:, 14]
+                    inbout_series = self.calculate_inbout_series(stimulus_matrix)
                     diff = np.diff(inbout_series)
                     bout_start_indices = np.where(diff == 1)[0] + 1
                     bout_end_indices = np.where(diff == -1)[0] + 1
@@ -295,7 +304,7 @@ class file_process:
     def extract_from_stimuli(cls, rootFolder):
         fish_individuals = sorted(
             os.path.join(rootFolder, fishIndex)
-            for fishIndex in os.listdir(rootFolder) 
+            for fishIndex in os.listdir(rootFolder)
             if os.path.isdir(os.path.join(rootFolder, fishIndex))
         )
         
@@ -317,3 +326,5 @@ class file_process:
         
         # stimulus_data = [[fish0],[fish1],[fish2],[fish3]] = [[trial0, trial1, ...],...], elements are paths.
         return stimulus_data, HT_data
+    
+    
