@@ -160,6 +160,8 @@ class stimuli:
             plt.show()
             
             avg_power = None
+            
+            time_axes = self.time_axes
 
 
         elif mode == "fish":
@@ -264,6 +266,8 @@ class stimuli:
             plt.tight_layout()
             plt.show()
             
+            time_axes = self.time_axes
+            
         elif mode == "fish_two_trials_concatenate":
             if self.trial_number_per_fish % 2 != 0:
                 raise ValueError("The trial number should be even when using this mode.")  # 修正注释：应为 even
@@ -297,6 +301,7 @@ class stimuli:
                 self.time_axes,
                 self.time_axes + self.time_axes[-1] + (self.time_axes[1] - self.time_axes[0])  # 加 dt 保证无重叠
             ])
+            time_axes = extended_time_axes
 
             # ==== 栅格化时间轴 ====
             bins = np.linspace(extended_time_axes.min(), extended_time_axes.max(), num_bins + 1)
@@ -336,6 +341,7 @@ class stimuli:
                 # ✅ 每只鱼单独画一张图
                 plt.figure(figsize=(10, 4))
                 plt.plot(lambda_times, lambda_vals_smooth * bin_width, linewidth=2, alpha=0.9)
+                plt.axvspan(320, 330, color='black', alpha=1.0, zorder=10) 
                 plt.axvline(x=320, color='red', linestyle='--', linewidth=1.5, label='Event @ 320s')
                 plt.xlabel('Time (s)')
                 plt.ylabel('Smoothed λ(t)')
@@ -391,14 +397,12 @@ class stimuli:
             plt.tight_layout()
             plt.show()
 
-        elif mode == "fish_eo_trials_separated":
-            
             
         
         else:
             raise ValueError("Invalide Mode. Mode could either be \"stimuli\" or \"fish\".")
         
-        return struggle_vector, extended_time_axes, avg_power
+        return struggle_vector, time_axes, avg_power, self.stimulus_frame_count
         
 
     def scalable_visualization_coherence(self, fish_index, trial_index):
